@@ -1,6 +1,7 @@
 package com.jzhong.sdscanner;
 
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -320,6 +322,15 @@ public class FileScanner extends Service {
             builder = new NotificationCompat.Builder(this)
                     .setContentTitle(getString(R.string.app_name))
                     .setSmallIcon(R.mipmap.ic_launcher);
+            Intent resultIntent = new Intent(this, MainActivity.class);
+            TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            stackBuilder.addNextIntent(resultIntent);
+            PendingIntent resultPendingIntent =
+                    stackBuilder.getPendingIntent(
+                            0,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                    );
+            builder.setContentIntent(resultPendingIntent);
         }
 
         //add notification status

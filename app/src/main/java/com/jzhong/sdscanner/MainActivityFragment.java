@@ -113,8 +113,6 @@ public class MainActivityFragment extends Fragment {
         adapter = new MyAdapter();
         recyclerView.setAdapter(adapter);
 
-        //add File scan listener
-
         //modify UI by scanner state
         if(fileScanner!=null) {
             modifyUIByScannerState(fileScanner.getState());
@@ -156,7 +154,7 @@ public class MainActivityFragment extends Fragment {
                 adapter.notifyDataSetChanged();
                 fabShare.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
-                textInfo.setText(String.format(getString(R.string.scan_in_progress), 0));
+                textInfo.setText(String.format(getString(R.string.scan_in_progress_format), 0));
                 buttonScan.setText(R.string.stop);
                 buttonScan.setOnClickListener(new View.OnClickListener() {
                     @Override
