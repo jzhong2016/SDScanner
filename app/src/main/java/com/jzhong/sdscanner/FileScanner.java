@@ -1,6 +1,7 @@
 package com.jzhong.sdscanner;
 
 import android.os.AsyncTask;
+import android.os.Environment;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -40,6 +41,7 @@ public class FileScanner {
 
     public interface FileScanListener {
         public void onScanStateChanged(State state);
+        public void onScanInProgress(int totalScanFileCount);
     }
 
     enum State {
@@ -54,7 +56,8 @@ public class FileScanner {
     private List<FileItem> listDirectory = new LinkedList<>();
     private List<WeakReference<FileScanListener>> fileScannerListeners = new LinkedList<>();
     private Map<String, Integer> extFrequency = new HashMap<>();
-    private AsyncTask<Boolean, Void, Void> taskScan;
+    private AsyncTask<Boolean, Integer, Boolean> taskScan;
+    private int totalScanFileCount;
 
     public FileScanner() {
         state = State.NotStart;
@@ -65,26 +68,32 @@ public class FileScanner {
         return state;
     }
 
+    public void addFileSanListener(FileScanListener l) {
+        fileScannerListeners.add(new WeakReference<FileScanListener>(l));
+    }
+
     public void startScan(boolean forceRestart) {
         if(taskScan != null) {
             return;
         }
-        taskScan = new AsyncTask<Boolean, Void, Void>() {
+        taskScan = new AsyncTask<Boolean, Integer, Boolean>() {
             @Override
-            protected Void doInBackground(Boolean... params) {
+            protected Boolean doInBackground(Boolean... params) {
                 boolean isContinueScan = params[0];
                 if(!isContinueScan) {
                     reset();
                 }
-
+                boolean isCancelled = false;
                 while(listDirectory.size() != 0) {
                     if (isCancelled()) {
+                        isCancelled = true;
                         break;
                     }
                     FileItem fileItem = listDirectory.get(0);
                     File dir = new File(fileItem.fileFullPath);
                     File[] files = dir.listFiles();
                     for(File file: files) {
+                        totalScanFileCount++;
                         if(file.isDirectory()) {
                             FileItem d = FileItem.buildDirectory(file.getPath());
                             listDirectory.add(d);
@@ -108,8 +117,9 @@ public class FileScanner {
                             }
                         }
                     }
+                    this.publishProgress(totalScanFileCount);
                 }
-                return null;
+                return isCancelled;
             }
 
             @Override
@@ -120,16 +130,19 @@ public class FileScanner {
             }
 
             @Override
-            protected void onPostExecute(Void aVoid) {
-                state = State.Finished;
+            protected void onPostExecute(Boolean cancelled) {
+                if(cancelled) {
+                    state = State.Paused;
+                } else {
+                    state = State.Finished;
+                }
                 notifiListener();
-                super.onPostExecute(aVoid);
+                super.onPostExecute(cancelled);
             }
 
             @Override
-            protected void onProgressUpdate(Void... values) {
-                state = State.Started;
-                notifiListener();
+            protected void onProgressUpdate(Integer... values) {
+                notifiListenerInProgress(values[0]);
                 super.onProgressUpdate(values);
             }
         };
@@ -148,6 +161,13 @@ public class FileScanner {
         mostFrequentFiles.clear();
         listDirectory.clear();
         extFrequency.clear();
+        totalScanFileCount = 0;
+        //add SD card root directory
+        String state = Environment.getExternalStorageState();
+        if ( Environment.MEDIA_MOUNTED.equals(state) || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state) ) {
+            listDirectory.add(FileItem.buildDirectory(Environment.getExternalStorageDirectory().getPath()));
+        }
+
     }
 
     private void notifiListener() {
@@ -163,5 +183,17 @@ public class FileScanner {
         }
     }
 
+    private void notifiListenerInProgress(int totalScan) {
+        Iterator<WeakReference<FileScanListener>> iterator = fileScannerListeners.iterator();
+        while (iterator.hasNext()) {
+            WeakReference<FileScanListener> r = iterator.next();
+            FileScanListener l = r.get();
+            if(l == null) {
+                iterator.remove();
+            } else {
+                l.onScanInProgress(totalScan);
+            }
+        }
+    }
 
 }
