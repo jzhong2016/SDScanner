@@ -1,12 +1,15 @@
 package com.jzhong.sdscanner;
 
+import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -273,6 +276,7 @@ public class FileScanner extends Service {
 
     }
 
+
     private void notifiListener() {
         Iterator<WeakReference<FileScanListener>> iterator = fileScannerListeners.iterator();
         while (iterator.hasNext()) {
@@ -284,6 +288,9 @@ public class FileScanner extends Service {
                 l.onScanStateChanged(state);
             }
         }
+        updateNotificationBar();
+
+
     }
 
     private void notifiListenerInProgress(int totalScan) {
@@ -297,6 +304,45 @@ public class FileScanner extends Service {
                 l.onScanInProgress(totalScan);
             }
         }
+
     }
 
+    //notifications
+    NotificationManager nm;
+    int notifyID = 1;
+    NotificationCompat.Builder builder;
+    int numMessages = 0;
+    private void updateNotificationBar() {
+        if(nm==null) {
+            nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        }
+        if(builder==null) {
+            builder = new NotificationCompat.Builder(this)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setSmallIcon(R.mipmap.ic_launcher);
+        }
+
+        //add notification status
+        switch (state) {
+            case Started:
+                builder.setContentText(getString(R.string.scan_in_progress));
+                nm.notify(
+                        notifyID,
+                        builder.build());
+                break;
+            case Paused:
+                builder.setContentText(getString(R.string.scan_paused));
+                nm.notify(
+                        notifyID,
+                        builder.build());
+                break;
+            case Finished:
+                builder.setContentText(getString(R.string.scan_completed));
+                nm.notify(
+                        notifyID,
+                        builder.build());
+                break;
+        }
+
+    }
 }

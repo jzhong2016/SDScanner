@@ -67,7 +67,7 @@ public class MainActivityFragment extends Fragment {
 
         @Override
         public void onScanInProgress(int totalScanFileCount) {
-            textInfo.setText(String.format(getString(R.string.scan_in_progress), totalScanFileCount));
+            textInfo.setText(String.format(getString(R.string.scan_in_progress_format), totalScanFileCount));
         }
     };
 
@@ -152,6 +152,8 @@ public class MainActivityFragment extends Fragment {
                 });
                 break;
             case Started:
+                displayList.clear();
+                adapter.notifyDataSetChanged();
                 fabShare.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
                 textInfo.setText(String.format(getString(R.string.scan_in_progress), 0));
@@ -159,8 +161,6 @@ public class MainActivityFragment extends Fragment {
                 buttonScan.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        displayList.clear();
-                        adapter.notifyDataSetChanged();
                         fileScanner.pauseScan();
                     }
                 });
