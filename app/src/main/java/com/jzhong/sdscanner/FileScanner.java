@@ -5,6 +5,7 @@ import android.os.Environment;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,7 +53,7 @@ public class FileScanner {
     }
 
     private State state;
-    private PriorityQueue<FileItem> mostFrequentFiles = new PriorityQueue<>();
+    private PriorityQueue<FileItem> mostFrequentFiles;
     private List<FileItem> listDirectory = new LinkedList<>();
     private List<WeakReference<FileScanListener>> fileScannerListeners = new LinkedList<>();
     private Map<String, Integer> extFrequency = new HashMap<>();
@@ -61,6 +62,12 @@ public class FileScanner {
 
     public FileScanner() {
         state = State.NotStart;
+        mostFrequentFiles = new PriorityQueue<>(10, new Comparator<FileItem>() {
+            @Override
+            public int compare(FileItem lhs, FileItem rhs) {
+                return (int) (rhs.fileSize - lhs.fileSize);
+            }
+        });
         reset();
     }
 
@@ -68,8 +75,20 @@ public class FileScanner {
         return state;
     }
 
-    public void addFileSanListener(FileScanListener l) {
+    public void addFileScanListener(FileScanListener l) {
         fileScannerListeners.add(new WeakReference<FileScanListener>(l));
+    }
+
+    public void removeFileScanListener(FileScanListener l) {
+        Iterator<WeakReference<FileScanListener>> iterator = fileScannerListeners.iterator();
+        while (iterator.hasNext()) {
+            WeakReference<FileScanListener> r = iterator.next();
+            FileScanListener listener = r.get();
+            if(listener == l) {
+                iterator.remove();
+                break;
+            }
+        }
     }
 
     public void startScan(boolean forceRestart) {
@@ -79,8 +98,8 @@ public class FileScanner {
         taskScan = new AsyncTask<Boolean, Integer, Boolean>() {
             @Override
             protected Boolean doInBackground(Boolean... params) {
-                boolean isContinueScan = params[0];
-                if(!isContinueScan) {
+                boolean isForceRestart = params[0];
+                if(isForceRestart) {
                     reset();
                 }
                 boolean isCancelled = false;
@@ -90,6 +109,7 @@ public class FileScanner {
                         break;
                     }
                     FileItem fileItem = listDirectory.get(0);
+                    listDirectory.remove(0);
                     File dir = new File(fileItem.fileFullPath);
                     File[] files = dir.listFiles();
                     for(File file: files) {
@@ -108,7 +128,7 @@ public class FileScanner {
                             if(i >= 0) {
                                 ext = file.getName().substring(i+1);
                             }
-                            if(ext.length() > 0) {
+                            if(ext != null && ext.length() > 0) {
                                 if(extFrequency.containsKey(ext)) {
                                     extFrequency.put(ext, extFrequency.get(ext) + 1);
                                 } else {
@@ -137,6 +157,7 @@ public class FileScanner {
                     state = State.Finished;
                 }
                 notifiListener();
+                taskScan = null;
                 super.onPostExecute(cancelled);
             }
 
@@ -147,7 +168,7 @@ public class FileScanner {
             }
         };
 
-        taskScan.execute();
+        taskScan.execute(forceRestart);
     }
 
     public void pauseScan() {

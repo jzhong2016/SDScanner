@@ -1,4 +1,13 @@
 <resources>
     <string name="app_name">SDScanner</string>
     <string name="action_settings">Settings</string>
+    <string name="scan">Scan</string>
+    <string name="reScan">Scan</string>
+    <string name="stop">Stop</string>
+    <string name="resume">Resume</string>
+    <string name="scan_paused">Scan paused</string>
+    <string name="scan_completed">Scan completed</string>
+    <string name="restart_to_scan">Press "SCAN" Button to rescan SD Card.</string>
+    <string name="scan_in_progress">Scan in progress: %d files scanned</string>
+    <string name="start_to_scan">Press "SCAN" Button to scan SD Card.</string>
 </resources>
