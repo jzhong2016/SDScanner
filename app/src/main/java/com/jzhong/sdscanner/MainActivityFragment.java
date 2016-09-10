@@ -1,6 +1,7 @@
 package com.jzhong.sdscanner;
 
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -13,6 +14,8 @@ import android.widget.TextView;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -28,6 +31,7 @@ public class MainActivityFragment extends Fragment {
     protected RecyclerView recyclerView;
     protected MyAdapter adapter;
     protected List<FileScanner.FileItem> mostFrequentFile = new ArrayList<>();
+    protected FloatingActionButton fabShare;
 
     FileScanner.FileScanListener fileScanListener = new FileScanner.FileScanListener() {
         @Override
@@ -53,6 +57,13 @@ public class MainActivityFragment extends Fragment {
         textInfo = (TextView) contentView.findViewById(R.id.textInfo);
         buttonScan = (Button) contentView.findViewById(R.id.buttonScan);
         progressBar = (ProgressBar) contentView.findViewById(R.id.progressBar);
+        fabShare = (FloatingActionButton) contentView.findViewById(R.id.fabShare);
+        fabShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
 
         //setup RecyclerView
         recyclerView = (RecyclerView) contentView.findViewById(R.id.recyclerView);
@@ -76,9 +87,14 @@ public class MainActivityFragment extends Fragment {
         super.onDestroyView();
     }
 
+    public void onBackPressed() {
+        fileScanner.pauseScan();
+    }
+
     protected void modifyUIByScannerState(FileScanner.State state) {
         switch (state) {
             case NotStart:
+                fabShare.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
                 textInfo.setText(R.string.start_to_scan);
                 buttonScan.setText(R.string.scan);
@@ -90,17 +106,21 @@ public class MainActivityFragment extends Fragment {
                 });
                 break;
             case Started:
+                fabShare.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
                 textInfo.setText(String.format(getString(R.string.scan_in_progress), 0));
                 buttonScan.setText(R.string.stop);
                 buttonScan.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        mostFrequentFile.clear();
+                        adapter.notifyDataSetChanged();
                         fileScanner.pauseScan();
                     }
                 });
                 break;
             case Paused:
+                fabShare.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
                 textInfo.setText(R.string.scan_paused);
                 buttonScan.setText(R.string.resume);
@@ -112,6 +132,7 @@ public class MainActivityFragment extends Fragment {
                 });
                 break;
             case Finished:
+                fabShare.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
                 textInfo.setText(getString(R.string.scan_completed) + " " + getString(R.string.restart_to_scan));
                 buttonScan.setText(R.string.scan);
@@ -129,6 +150,13 @@ public class MainActivityFragment extends Fragment {
     protected void buildFileList() {
         mostFrequentFile.clear();
         mostFrequentFile.addAll(fileScanner.getMostLargestFiles());
+        Collections.sort(mostFrequentFile, new Comparator<FileScanner.FileItem>() {
+            @Override
+            public int compare(FileScanner.FileItem lhs, FileScanner.FileItem rhs) {
+                return (int) (rhs.fileSize - lhs.fileSize);
+            }
+        });
+
         adapter.notifyDataSetChanged();
     }
 
@@ -177,5 +205,7 @@ public class MainActivityFragment extends Fragment {
         int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
         return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
+
+
 
 }
