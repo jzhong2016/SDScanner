@@ -9,17 +9,12 @@ public class ScannerApplication extends Application{
 
     public static ScannerApplication application;
 
-    private FileScanner fileScanner;
+
 
     public ScannerApplication() {
         application = this;
     }
 
-    public FileScanner getFileScanner() {
-        if(fileScanner==null) {
-            fileScanner = new FileScanner();
-        }
-        return fileScanner;
-    }
+
 
 }

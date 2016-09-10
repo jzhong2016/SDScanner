@@ -1,6 +1,11 @@
 package com.jzhong.sdscanner;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -33,7 +38,28 @@ public class MainActivityFragment extends Fragment {
     protected List<Object> displayList = new ArrayList<>();
     protected FloatingActionButton fabShare;
 
-    FileScanner.FileScanListener fileScanListener = new FileScanner.FileScanListener() {
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            FileScanner.LocalBinder binder = (FileScanner.LocalBinder) service;
+            fileScanner = binder.getService();
+            fileScanner.addFileScanListener(fileScanListener);
+            modifyUIByScannerState(fileScanner.getState());
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            fileScanner.removeFileScanListener(fileScanListener);
+            fileScanner = null;
+        }
+    };
+
+    private FileScanner.FileScanListener fileScanListener = new FileScanner.FileScanListener() {
         @Override
         public void onScanStateChanged(FileScanner.State state) {
             modifyUIByScannerState(state);
@@ -46,7 +72,21 @@ public class MainActivityFragment extends Fragment {
     };
 
     public MainActivityFragment() {
-        fileScanner = ScannerApplication.application.getFileScanner();
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Intent intent = new Intent(getContext(), FileScanner.class);
+        getContext().startService(intent);
+        getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        getContext().unbindService(mConnection);
     }
 
     @Override
@@ -74,9 +114,11 @@ public class MainActivityFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         //add File scan listener
-        fileScanner.addFileScanListener(fileScanListener);
+
         //modify UI by scanner state
-        modifyUIByScannerState(fileScanner.getState());
+        if(fileScanner!=null) {
+            modifyUIByScannerState(fileScanner.getState());
+        }
 
         return contentView;
     }
@@ -84,6 +126,7 @@ public class MainActivityFragment extends Fragment {
     @Override
     public void onDestroyView() {
         fileScanner.removeFileScanListener(fileScanListener);
+        contentView = null;
         super.onDestroyView();
     }
 
@@ -92,6 +135,9 @@ public class MainActivityFragment extends Fragment {
     }
 
     protected void modifyUIByScannerState(FileScanner.State state) {
+        if(contentView == null) {
+            return;
+        }
         switch (state) {
             case NotStart:
                 fabShare.setVisibility(View.GONE);

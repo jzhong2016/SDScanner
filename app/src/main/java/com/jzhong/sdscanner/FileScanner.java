@@ -1,7 +1,12 @@
 package com.jzhong.sdscanner;
 
+import android.app.Service;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Environment;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -17,7 +22,7 @@ import java.util.PriorityQueue;
 /**
  * Created by busyzhong on 9/10/16.
  */
-public class FileScanner {
+public class FileScanner extends Service {
 
     private static int MOST_LARGEST_FILE_COUNT = 10;
     private static int MOST_FREQUENT_EXT_COUNT = 5;
@@ -72,6 +77,21 @@ public class FileScanner {
     private List<FileExtItem> mostFrequentExts = new ArrayList<>();
     private long averageFileSize;
     private int totalScanFileCount;
+
+    private final IBinder mBinder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        FileScanner getService() {
+            // Return this instance of LocalService so clients can call public methods
+            return FileScanner.this;
+        }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 
     public FileScanner() {
         state = State.NotStart;

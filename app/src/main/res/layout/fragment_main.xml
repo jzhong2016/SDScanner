@@ -5,22 +5,22 @@
     tools:context="com.jzhong.sdscanner.MainActivityFragment"
     tools:showIn="@layout/activity_main">
     <LinearLayout
-        android:padding="16dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         >
         <ProgressBar
             android:id="@+id/progressBar"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
             android:layout_height="20dp"
-            android:layout_marginBottom="10dp"
+            android:layout_margin="10dp"
             android:indeterminate="false" />
         <TextView
             android:id="@+id/textInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
+            android:layout_margin="10dp"
             android:gravity="center"
             android:text="@string/start_to_scan" />
         <Button
