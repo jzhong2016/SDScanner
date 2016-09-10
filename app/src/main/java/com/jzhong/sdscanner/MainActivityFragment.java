@@ -232,7 +232,7 @@ public class MainActivityFragment extends Fragment {
             if(item instanceof FileScanner.FileExtItem) {
                 FileScanner.FileExtItem fileExtItem = (FileScanner.FileExtItem) item;
                 holder.textName.setText(fileExtItem.ext);
-                holder.textSize.setText(getString(R.string.count) + fileExtItem.count);
+                holder.textSize.setText(String.format("%d", fileExtItem.count));
             } else if(item instanceof FileScanner.FileItem) {
                 FileScanner.FileItem fileItem = (FileScanner.FileItem) item;
                 holder.textName.setText(fileItem.fileName);
