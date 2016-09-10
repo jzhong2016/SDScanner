@@ -150,8 +150,16 @@ public class FileScanner {
             }
 
             @Override
+            protected void onCancelled() {
+                state = State.Paused;
+                notifiListener();
+                taskScan = null;
+                super.onCancelled();
+            }
+
+            @Override
             protected void onPostExecute(Boolean cancelled) {
-                if(cancelled) {
+                if(isCancelled()) {
                     state = State.Paused;
                 } else {
                     state = State.Finished;
