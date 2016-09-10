@@ -9,10 +9,8 @@
     android:orientation="vertical"
     tools:context="com.jzhong.sdscanner.MainActivityFragment"
     tools:showIn="@layout/activity_main">
-
     <ProgressBar
         android:id="@+id/progressBar"
-        style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_width="match_parent"
         android:layout_height="20dp"
         android:layout_marginBottom="10dp"
@@ -22,6 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
+        android:gravity="center"
         android:text="@string/start_to_scan" />
     <Button
         android:id="@+id/buttonScan"
@@ -30,5 +29,10 @@
         android:layout_gravity="center_horizontal"
         />
 
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
+    </android.support.v7.widget.RecyclerView>
 </LinearLayout>

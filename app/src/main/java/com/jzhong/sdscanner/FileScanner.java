@@ -5,6 +5,7 @@ import android.os.Environment;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,7 +54,7 @@ public class FileScanner {
     }
 
     private State state;
-    private PriorityQueue<FileItem> mostFrequentFiles;
+    private PriorityQueue<FileItem> mostLargestFiles;
     private List<FileItem> listDirectory = new LinkedList<>();
     private List<WeakReference<FileScanListener>> fileScannerListeners = new LinkedList<>();
     private Map<String, Integer> extFrequency = new HashMap<>();
@@ -62,10 +63,10 @@ public class FileScanner {
 
     public FileScanner() {
         state = State.NotStart;
-        mostFrequentFiles = new PriorityQueue<>(10, new Comparator<FileItem>() {
+        mostLargestFiles = new PriorityQueue<>(10, new Comparator<FileItem>() {
             @Override
             public int compare(FileItem lhs, FileItem rhs) {
-                return (int) (rhs.fileSize - lhs.fileSize);
+                return (int) (lhs.fileSize - rhs.fileSize);
             }
         });
         reset();
@@ -73,6 +74,11 @@ public class FileScanner {
 
     public State getState() {
         return state;
+    }
+
+    public List<FileItem> getMostLargestFiles() {
+        List<FileItem> files = new ArrayList<>(mostLargestFiles);
+        return files;
     }
 
     public void addFileScanListener(FileScanListener l) {
@@ -119,9 +125,9 @@ public class FileScanner {
                             listDirectory.add(d);
                         } else {
                             FileItem f = FileItem.buildFile(file.getPath(), file.getName(), file.length());
-                            mostFrequentFiles.offer(f);
-                            if(mostFrequentFiles.size() > 10) {
-                                mostFrequentFiles.poll();
+                            mostLargestFiles.offer(f);
+                            if(mostLargestFiles.size() > 10) {
+                                mostLargestFiles.poll();
                             }
                             String ext = null;
                             int i = file.getName().lastIndexOf(".");
@@ -187,7 +193,7 @@ public class FileScanner {
     }
 
     private void reset() {
-        mostFrequentFiles.clear();
+        mostLargestFiles.clear();
         listDirectory.clear();
         extFrequency.clear();
         totalScanFileCount = 0;
