@@ -101,7 +101,7 @@ public class MainActivityFragment extends Fragment {
         fabShare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                shareResult();
             }
         });
 
@@ -302,6 +302,41 @@ public class MainActivityFragment extends Fragment {
         return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
 
+
+    private void shareResult() {
+        //format the share text
+        StringBuilder sb = new StringBuilder();
+        for(Object item: displayList) {
+            if (item instanceof FileScanner.FileExtItem) {
+                FileScanner.FileExtItem fileExtItem = (FileScanner.FileExtItem) item;
+                sb.append(fileExtItem.ext);
+                sb.append(" \t\t ");
+                sb.append(String.format("%d", fileExtItem.count));
+                sb.append("\n");
+
+            } else if (item instanceof FileScanner.FileItem) {
+                FileScanner.FileItem fileItem = (FileScanner.FileItem) item;
+                sb.append(fileItem.fileName);
+                sb.append(" \t\t ");
+                sb.append(formatFileSize(fileItem.fileSize));
+                sb.append("\n");
+
+            } else {
+                sb.append("\n");
+                String title = (String) item;
+                sb.append(title);
+                sb.append("\n");
+            }
+        }
+
+        //start share intent
+        Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+        sharingIntent.setType("text/plain");
+        sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.sd_file_statistics));
+        sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, sb.toString());
+        startActivity(Intent.createChooser(sharingIntent, getResources().getString(R.string.share_using)));
+
+    }
 
 
 }

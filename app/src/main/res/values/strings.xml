@@ -15,4 +15,6 @@
     <string name="top_10_biggest_files">Top Biggest Files</string>
     <string name="most_frequent_file_ext">Most Frequent File Extenstion</string>
     <string name="count">Count:</string>
+    <string name="sd_file_statistics">SD Files Statistics</string>
+    <string name="share_using">Share Using...</string>
 </resources>
