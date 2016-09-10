@@ -18,6 +18,10 @@ import java.util.PriorityQueue;
  * Created by busyzhong on 9/10/16.
  */
 public class FileScanner {
+
+    private static int MOST_LARGEST_FILE_COUNT = 10;
+    private static int MOST_FREQUENT_EXT_COUNT = 5;
+
     public static class FileItem {
         public String fileName;
         public String fileFullPath;
@@ -41,6 +45,11 @@ public class FileScanner {
         }
     }
 
+    public class FileExtItem {
+        String ext;
+        int count;
+    }
+
     public interface FileScanListener {
         public void onScanStateChanged(State state);
         public void onScanInProgress(int totalScanFileCount);
@@ -54,16 +63,19 @@ public class FileScanner {
     }
 
     private State state;
-    private PriorityQueue<FileItem> mostLargestFiles;
+    private PriorityQueue<FileItem> mostLargestFileQueue;
     private List<FileItem> listDirectory = new LinkedList<>();
     private List<WeakReference<FileScanListener>> fileScannerListeners = new LinkedList<>();
     private Map<String, Integer> extFrequency = new HashMap<>();
     private AsyncTask<Boolean, Integer, Boolean> taskScan;
+    private List<FileItem> mostLargestFiles = new ArrayList<>();
+    private List<FileExtItem> mostFrequentExts = new ArrayList<>();
+    private long averageFileSize;
     private int totalScanFileCount;
 
     public FileScanner() {
         state = State.NotStart;
-        mostLargestFiles = new PriorityQueue<>(10, new Comparator<FileItem>() {
+        mostLargestFileQueue = new PriorityQueue<>(10, new Comparator<FileItem>() {
             @Override
             public int compare(FileItem lhs, FileItem rhs) {
                 return (int) (lhs.fileSize - rhs.fileSize);
@@ -77,8 +89,15 @@ public class FileScanner {
     }
 
     public List<FileItem> getMostLargestFiles() {
-        List<FileItem> files = new ArrayList<>(mostLargestFiles);
-        return files;
+        return mostLargestFiles;
+    }
+
+    public List<FileExtItem> getMostFrequentExts() {
+        return mostFrequentExts;
+    }
+
+    public long getAverageFileSize() {
+        return averageFileSize;
     }
 
     public void addFileScanListener(FileScanListener l) {
@@ -119,20 +138,20 @@ public class FileScanner {
                     File dir = new File(fileItem.fileFullPath);
                     File[] files = dir.listFiles();
                     for(File file: files) {
-                        totalScanFileCount++;
                         if(file.isDirectory()) {
                             FileItem d = FileItem.buildDirectory(file.getPath());
                             listDirectory.add(d);
                         } else {
+                            totalScanFileCount++;
                             FileItem f = FileItem.buildFile(file.getPath(), file.getName(), file.length());
-                            mostLargestFiles.offer(f);
-                            if(mostLargestFiles.size() > 10) {
-                                mostLargestFiles.poll();
+                            mostLargestFileQueue.offer(f);
+                            if(mostLargestFileQueue.size() > MOST_LARGEST_FILE_COUNT) {
+                                mostLargestFileQueue.poll();
                             }
                             String ext = null;
                             int i = file.getName().lastIndexOf(".");
                             if(i >= 0) {
-                                ext = file.getName().substring(i+1);
+                                ext = file.getName().substring(i).toLowerCase();
                             }
                             if(ext != null && ext.length() > 0) {
                                 if(extFrequency.containsKey(ext)) {
@@ -141,6 +160,7 @@ public class FileScanner {
                                     extFrequency.put(ext, 1);
                                 }
                             }
+                            averageFileSize =(long) (f.fileSize/totalScanFileCount + ((totalScanFileCount - 1) * 1.0/totalScanFileCount) * totalScanFileCount);
                         }
                     }
                     this.publishProgress(totalScanFileCount);
@@ -169,6 +189,7 @@ public class FileScanner {
                     state = State.Paused;
                 } else {
                     state = State.Finished;
+                    buildResultOnScannDone();
                 }
                 notifiListener();
                 taskScan = null;
@@ -192,11 +213,38 @@ public class FileScanner {
         }
     }
 
+    private void buildResultOnScannDone() {
+
+        mostLargestFiles.clear();
+        mostLargestFiles.addAll(mostLargestFileQueue);
+        mostLargestFileQueue.clear();
+        mostFrequentExts.clear();
+        PriorityQueue<FileExtItem> q = new PriorityQueue<>(MOST_FREQUENT_EXT_COUNT, new Comparator<FileExtItem>() {
+            @Override
+            public int compare(FileExtItem lhs, FileExtItem rhs) {
+                return (lhs.count - rhs.count);
+            }
+        });
+        for(Map.Entry<String, Integer> e: extFrequency.entrySet()) {
+            FileExtItem item = new FileExtItem();
+            item.count = e.getValue();
+            item.ext = e.getKey();
+            q.offer(item);
+            if(q.size() > MOST_FREQUENT_EXT_COUNT) {
+                q.poll();
+            }
+        }
+        mostFrequentExts.addAll(q);
+    }
+
     private void reset() {
         mostLargestFiles.clear();
         listDirectory.clear();
         extFrequency.clear();
+        averageFileSize = 0;
         totalScanFileCount = 0;
+        mostFrequentExts.clear();
+        mostLargestFileQueue.clear();
         //add SD card root directory
         String state = Environment.getExternalStorageState();
         if ( Environment.MEDIA_MOUNTED.equals(state) || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state) ) {

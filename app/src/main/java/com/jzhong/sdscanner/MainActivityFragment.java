@@ -30,7 +30,7 @@ public class MainActivityFragment extends Fragment {
     protected ProgressBar progressBar;
     protected RecyclerView recyclerView;
     protected MyAdapter adapter;
-    protected List<FileScanner.FileItem> mostFrequentFile = new ArrayList<>();
+    protected List<Object> displayList = new ArrayList<>();
     protected FloatingActionButton fabShare;
 
     FileScanner.FileScanListener fileScanListener = new FileScanner.FileScanListener() {
@@ -113,7 +113,7 @@ public class MainActivityFragment extends Fragment {
                 buttonScan.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        mostFrequentFile.clear();
+                        displayList.clear();
                         adapter.notifyDataSetChanged();
                         fileScanner.pauseScan();
                     }
@@ -148,22 +148,38 @@ public class MainActivityFragment extends Fragment {
     }
 
     protected void buildFileList() {
-        mostFrequentFile.clear();
-        mostFrequentFile.addAll(fileScanner.getMostLargestFiles());
+        displayList.clear();
+        //Add average file size
+        displayList.add(getString(R.string.average_file_size) + " " + formatFileSize(fileScanner.getAverageFileSize()));
+        //add top 10 biggest file item
+        List<FileScanner.FileItem> mostFrequentFile = fileScanner.getMostLargestFiles();
+        displayList.add(getString(R.string.top_10_biggest_files));
         Collections.sort(mostFrequentFile, new Comparator<FileScanner.FileItem>() {
             @Override
             public int compare(FileScanner.FileItem lhs, FileScanner.FileItem rhs) {
                 return (int) (rhs.fileSize - lhs.fileSize);
             }
         });
-
+        displayList.addAll(mostFrequentFile);
+        //add most frequent file extension
+        List<FileScanner.FileExtItem> mostFrequentExts = fileScanner.getMostFrequentExts();
+        displayList.add(getString(R.string.most_frequent_file_ext));
+        Collections.sort(mostFrequentExts, new Comparator<FileScanner.FileExtItem>() {
+            @Override
+            public int compare(FileScanner.FileExtItem lhs, FileScanner.FileExtItem rhs) {
+                return (int) (rhs.count - lhs.count);
+            }
+        });
+        displayList.addAll(mostFrequentExts);
         adapter.notifyDataSetChanged();
     }
 
     //RecyclerView Adapter
 
     protected class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
-
+        final int VIEW_TYPE_TITLE = 0;
+        final int VIEW_TYPE_FILE = 1;
+        final int VIEW_TYPE_EXT  = 2;
         public class ViewHolder extends RecyclerView.ViewHolder {
             public TextView textName;
             public TextView textSize;
@@ -175,26 +191,62 @@ public class MainActivityFragment extends Fragment {
             }
         }
 
+        public int getItemViewType(int position) {
+            Object item = displayList.get(position);
+            if(item instanceof FileScanner.FileExtItem) {
+                return VIEW_TYPE_EXT;
+            } else if(item instanceof FileScanner.FileItem) {
+                return VIEW_TYPE_FILE;
+            } else {
+                return VIEW_TYPE_TITLE;
+            }
+
+        }
+
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             // create a new view
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_row_file, parent, false);
-            // set the view's size, margins, paddings and layout parameters
-            ViewHolder vh = new ViewHolder(v);
-            return vh;
+            switch (viewType) {
+                case VIEW_TYPE_FILE: {
+                    View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_row_file, parent, false);
+                    ViewHolder vh = new ViewHolder(v);
+                    return vh;
+                }
+                case VIEW_TYPE_EXT: {
+                    View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_row_ext, parent, false);
+                    ViewHolder vh = new ViewHolder(v);
+                    return vh;
+                }
+                default:{
+                    View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_row_title, parent, false);
+                    ViewHolder vh = new ViewHolder(v);
+                    return vh;
+                }
+            }
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
-            FileScanner.FileItem item = mostFrequentFile.get(position);
-            holder.textName.setText(item.fileName);
-            holder.textSize.setText(formatFileSize(item.fileSize));
+            Object item = displayList.get(position);
+            if(item instanceof FileScanner.FileExtItem) {
+                FileScanner.FileExtItem fileExtItem = (FileScanner.FileExtItem) item;
+                holder.textName.setText(fileExtItem.ext);
+                holder.textSize.setText(getString(R.string.count) + fileExtItem.count);
+            } else if(item instanceof FileScanner.FileItem) {
+                FileScanner.FileItem fileItem = (FileScanner.FileItem) item;
+                holder.textName.setText(fileItem.fileName);
+                holder.textSize.setText(formatFileSize(fileItem.fileSize));
+            } else {
+                String title = (String) item;
+                holder.textName.setText(title);
+            }
+
         }
 
         @Override
         public int getItemCount() {
-            return mostFrequentFile.size();
+            return displayList.size();
         }
     }
 

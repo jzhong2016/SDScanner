@@ -10,4 +10,8 @@
     <string name="restart_to_scan">Press "SCAN" Button to rescan SD Card.</string>
     <string name="scan_in_progress">Scan in progress: %d files scanned</string>
     <string name="start_to_scan">Press "SCAN" Button to scan SD Card.</string>
+    <string name="average_file_size">Average File Size: </string>
+    <string name="top_10_biggest_files">Top Biggest Files</string>
+    <string name="most_frequent_file_ext">Most Frequent File Extenstion</string>
+    <string name="count">Count:</string>
 </resources>
